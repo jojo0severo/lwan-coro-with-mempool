@@ -239,7 +239,6 @@ coro_update(struct coro *coro, struct coro_switcher *new_switcher)
 ALWAYS_INLINE struct coro *
 coro_new(struct coro_switcher *switcher, coro_function_t function, void *data, pool_t *pool)
 {
-//    struct coro *coro = malloc(sizeof(*coro) + CORO_STACK_MIN);
     struct coro *coro = alloc_mem(pool);
     if (UNLIKELY(!coro))
         return NULL;
@@ -269,8 +268,7 @@ coro_resume(struct coro *coro)
 #if defined(__x86_64__) || defined(__i386__)
     coro_swapcontext(&coro->switcher->caller, &coro->context);
     if (!coro->ended)
-        memcpy(&coro->context, &coro->switcher->callee,
-                    sizeof(coro->context));
+        memcpy(&coro->context, &coro->switcher->callee, sizeof(coro->context));
 #else
     coro_context prev_caller;
 
@@ -327,7 +325,6 @@ coro_defer_any(struct coro *coro, defer_func func, void *data1, void *data2)
 
     defer = coro_defer_array_append(&coro->defer);
     if (UNLIKELY(!defer)) {
-        //lwan_status_error("Could not add new deferred function for coro %p", coro);
         return;
     }
 
@@ -400,4 +397,10 @@ coro_printf(struct coro *coro, const char *fmt, ...)
 
     coro_defer(coro, CORO_DEFER(free), tmp_str);
     return tmp_str;
+}
+
+size_t
+coro_size()
+{
+    return sizeof(struct coro) + CORO_STACK_MIN;
 }

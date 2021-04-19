@@ -55,6 +55,7 @@ void   *coro_malloc_full(struct coro *coro, size_t size, void (*destroy_func)())
 char   *coro_strdup(struct coro *coro, const char *str);
 char   *coro_strndup(struct coro *coro, const char *str, size_t len);
 char   *coro_printf(struct coro *coro, const char *fmt, ...);
+size_t coro_size();
 
 #define CORO_DEFER(fn)		((void (*)(void *))(fn))
 #define CORO_DEFER2(fn)		((void (*)(void *, void *))(fn))
