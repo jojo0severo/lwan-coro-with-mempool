@@ -35,8 +35,6 @@ typedef uintptr_t coro_context[7];
 typedef ucontext_t coro_context;
 #endif
 
-#include "mem-pool.h"
-
 #define DEFAULT_BUFFER_SIZE 4096
 #define ALWAYS_INLINE inline __attribute__((always_inline))
 
@@ -50,8 +48,8 @@ typedef struct coro_switcher {
     coro_context callee;
 }coro_switcher_t;
 
-struct coro *coro_new(struct coro_switcher *switcher, coro_function_t function, void *data, pool_t *pool);
-void	coro_free(struct coro *coro, pool_t *pool);
+struct coro *coro_new(struct coro_switcher *switcher, coro_function_t function, void *data);
+void	coro_free(struct coro *coro);
 
 void    coro_reset(struct coro *coro, coro_function_t func, void *data);
 void    coro_update(struct coro *coro, struct coro_switcher *new_switcher);

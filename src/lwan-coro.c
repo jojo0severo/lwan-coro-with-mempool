@@ -26,6 +26,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+//#include "lwan-private.h"
+
 #include "lwan-array.h"
 #include "lwan-coro.h"
 
@@ -35,8 +37,8 @@
 
 #define CORO_STACK_MIN         ((3 * (PTHREAD_STACK_MIN)) / 2)
 
-static_assert(DEFAULT_BUFFER_SIZE < (CORO_STACK_MIN + PTHREAD_STACK_MIN),
-    "Request buffer fits inside coroutine stack");
+// static_assert(DEFAULT_BUFFER_SIZE < (CORO_STACK_MIN + PTHREAD_STACK_MIN),
+    // "Request buffer fits inside coroutine stack");
 
 typedef void (*defer_func)();
 
@@ -256,24 +258,19 @@ coro_update(struct coro *coro, struct coro_switcher *new_switcher)
 }
 
 ALWAYS_INLINE struct coro *
-coro_new(struct coro_switcher *switcher, coro_function_t function, void *data, pool_t *pool)
+coro_new(struct coro_switcher *switcher, coro_function_t function, void *data)
 {
-    struct coro *coro = alloc_mem(pool);
+    struct coro *coro = malloc(sizeof(*coro) + CORO_STACK_MIN);
     if (UNLIKELY(!coro))
         return NULL;
 
     if (UNLIKELY(coro_defer_array_init(&coro->defer) < 0)) {
-        free_mem(pool, coro);
+        free(coro);
         return NULL;
     }
 
     coro->switcher = switcher;
     coro_reset(coro, function, data);
-
-#if !defined(NDEBUG) && defined(USE_VALGRIND)
-    char *stack = (char *)(coro + 1);
-    coro->vg_stack_id = VALGRIND_STACK_REGISTER(stack, stack + CORO_STACK_MIN);
-#endif
 
     return coro;
 }
@@ -287,7 +284,8 @@ coro_resume(struct coro *coro)
 #if defined(__x86_64__) || defined(__i386__)
     coro_swapcontext(&coro->switcher->caller, &coro->context);
     if (!coro->ended)
-        memcpy(&coro->context, &coro->switcher->callee, sizeof(coro->context));
+        memcpy(&coro->context, &coro->switcher->callee,
+                    sizeof(coro->context));
 #else
     coro_context prev_caller;
 
@@ -324,7 +322,7 @@ coro_yield(struct coro *coro, int value)
 }
 
 void
-coro_free(struct coro *coro, pool_t *pool)
+coro_free(struct coro *coro)
 {
     assert(coro);
 #if !defined(NDEBUG) && defined(USE_VALGRIND)
@@ -332,7 +330,7 @@ coro_free(struct coro *coro, pool_t *pool)
 #endif
     coro_deferred_run(coro, 0);
     coro_defer_array_reset(&coro->defer);
-    free_mem(pool, coro);
+    free(coro);
 }
 
 static void
@@ -344,6 +342,7 @@ coro_defer_any(struct coro *coro, defer_func func, void *data1, void *data2)
 
     defer = coro_defer_array_append(&coro->defer);
     if (UNLIKELY(!defer)) {
+        //lwan_status_error("Could not add new deferred function for coro %p", coro);
         return;
     }
 
