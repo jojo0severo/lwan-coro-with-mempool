@@ -1,9 +1,7 @@
 #cython: language_level=3
 
 from libc.stdlib cimport malloc, free
-from cpython.ref cimport Py_INCREF, Py_DECREF, PyObject
-from cpython.object cimport PyObject_Call, PyObject_CallObject
-from cpython.method cimport PyMethod_GET_FUNCTION
+from cpython.ref cimport PyObject
 
 
 cdef extern from "lwan-coro.h" nogil:
