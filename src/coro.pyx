@@ -1,62 +1,112 @@
 cdef class Coroutine:
-    def __cinit__(self, Switcher switcher, Bridge bridge):
-        self.switcher = switcher
-        self.bridge = bridge
-        self.coroutine = coro_new(switcher.switcher, callback, <void*> bridge)
-        if self.coroutine is NULL:
-            raise MemoryError()
+    def __cinit__(self, object callback, object args, object kwargs):
+        cdef:
+            PyObject *c_callback;
+            PyObject *c_args;
+            PyObject *c_kwargs;
 
-    cpdef void coro_reset(self, Bridge data):
-        coro_reset(self.coroutine, callback, <void *> data)
+        c_callback = <PyObject *> callback
+        c_callback.ob_refcnt += 1
 
-    cpdef void coro_update(self, Switcher new_switcher):
-        coro_update(self.coroutine, new_switcher.switcher)
+        c_args = <PyObject *> args
+        c_args.ob_refcnt += 1
 
-    cpdef int coro_resume(self):
+        c_kwargs = <PyObject *> kwargs
+        c_kwargs.ob_refcnt += 1
+
+        self.bridge = <bridge_t *> malloc(sizeof(bridge_t))
+        self.bridge.callback = c_callback
+        self.bridge.arguments = c_args
+        self.bridge.key_arguments = c_kwargs
+
+        self.switcher = <coro_switcher_t *> malloc(sizeof(coro_switcher_t))
+        self.coroutine = coro_new(self.switcher, callback_wrap, <void *> self.bridge)
+
+    cdef void coro_reset(self, object callback, object args, object kwargs):
+        cdef:
+            PyObject *c_callback;
+            PyObject *c_args;
+            PyObject *c_kwargs;
+
+        c_callback = <PyObject *> callback
+        c_callback.ob_refcnt += 1
+
+        c_args = <PyObject *> args
+        c_args.ob_refcnt += 1
+
+        c_kwargs = <PyObject *> kwargs
+        c_kwargs.ob_refcnt += 1
+
+        free(self.bridge)
+
+        self.bridge = <bridge_t *> malloc(sizeof(bridge_t))
+        self.bridge.callback = c_callback
+        self.bridge.arguments = c_args
+        self.bridge.key_arguments = c_kwargs
+
+        coro_reset(self.coroutine, callback_wrap, <void *> self.bridge)
+
+    cdef void coro_update(self, coro_switcher_t *switcher):
+        coro_update(self.coroutine, switcher)
+
+    cdef int coro_resume(self):
         return coro_resume(self.coroutine)
 
-    cpdef int coro_resume_value(self, int value):
+    cdef int coro_resume_value(self, int value):
         return coro_resume_value(self.coroutine, value)
 
-    cpdef int coro_yield(self, int value):
+    cdef int coro_yield(self, int value):
         return coro_yield(self.coroutine, value)
 
-    cpdef int coro_size(self):
+    cdef int coro_size(self):
         return coro_size()
 
-    cpdef object response(self):
-        return <object> self.bridge.response
+    cdef object response(self):
+        cdef PyObject *resp = self.bridge.response
+        if resp == NULL:
+            return None
+
+        return <object> resp
 
     def __dealloc__(self):
-        if self.coroutine is not NULL:
-            coro_free(self.coroutine)
+        if self.bridge.callback != NULL:
+            self.bridge.callback.ob_refcnt -= 1
+        if self.bridge.arguments != NULL:
+            self.bridge.arguments.ob_refcnt -= 1
+        if self.bridge.key_arguments != NULL:
+            self.bridge.key_arguments.ob_refcnt -= 1
+        if self.bridge.response != NULL:
+            self.bridge.response.ob_refcnt -= 1
 
-cdef class Switcher:
-    def __cinit__(self):
-        self.switcher = <coro_switcher_t *> malloc(sizeof(coro_switcher_t))
-
-    def __dealloc__(self):
+        free(self.bridge)
         free(self.switcher)
 
-cdef class Bridge:
-    def __cinit__(self, callback, arguments):
-        Py_INCREF(callback)
-        Py_INCREF(arguments)
+        coro_free(self.coroutine)
 
-        self.callback = <void*> callback
-        self.arguments = <void*> arguments
+cdef int callback_wrap(coro_t *coro, void *data) nogil:
+    cdef:
+        bridge_t *bridge;
+        PyObject *c_callback;
+        PyObject *c_arguments;
+        PyObject *c_key_arguments;
+        PyObject *c_response;
 
-    def __dealloc__(self):
-        pass
+    bridge = <bridge_t *> data
+    c_callback = bridge.callback
+    c_arguments = bridge.arguments
+    c_key_arguments = bridge.key_arguments
+    c_response = NULL
 
-cdef int callback(coro_t *coro, void *data) nogil:
     with gil:
-        python_data = <Bridge> (<object> data)
-        callback = <object> python_data.callback
-        arguments = <object> python_data.arguments
-        response = <object> callback(arguments)
+        args = <object> c_arguments
+        kwargs = <object> c_key_arguments
+        callback = <object> c_callback
 
-        Py_INCREF(response)
-        python_data.response = <void*> response
+        tmp = callback(*args, **kwargs)
+
+        response = <PyObject*> tmp
+
+    response.ob_refcnt += 1
+    bridge.response = response
 
     return 0

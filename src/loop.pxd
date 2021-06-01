@@ -1,6 +1,5 @@
 #cython: language_level=3
-
+from libc.stdio cimport printf
 
 cdef class Loop:
-    cpdef create_coro(self, callback, arguments)
-    cpdef run(self, coroutines)
+    cdef list _run(self, list coroutines)

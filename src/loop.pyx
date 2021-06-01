@@ -1,16 +1,17 @@
-from coro cimport Coroutine, Switcher, Bridge
+from coro cimport Coroutine
 
 cdef class Loop:
 
-    cpdef create_coro(self, callback, arguments):
-        switcher = Switcher.__new__(Switcher)
-        bridge = Bridge.__new__(Bridge, callback, arguments)
+    def create_coro(self, callback, *args, **kwargs):
+        return Coroutine.__new__(Coroutine, callback, args, kwargs)
 
-        return Coroutine.__new__(Coroutine, switcher, bridge)
+    def run(self, coroutines):
+        return self._run(coroutines)
 
-    cpdef run(self, coroutines):
+    cdef list _run(self, list coroutines):
         resps = []
-        for coro in coroutines:
+        for i in range(len(coroutines)):
+            coro = <Coroutine> coroutines[i]
             coro.coro_resume()
             resps.append(coro.response())
 

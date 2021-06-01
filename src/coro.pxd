@@ -1,8 +1,9 @@
 #cython: language_level=3
 
-from libc.stdio cimport printf
 from libc.stdlib cimport malloc, free
 from cpython.ref cimport Py_INCREF, Py_DECREF, PyObject
+from cpython.object cimport PyObject_Call, PyObject_CallObject
+from cpython.method cimport PyMethod_GET_FUNCTION
 
 
 cdef extern from "lwan-coro.h" nogil:
@@ -27,25 +28,22 @@ cdef enum coro_yield_value:
     MAY_RESUME = 0,
     FINISHED = 1
 
-cdef class Switcher:
-    cdef coro_switcher_t *switcher;
-
-cdef class Bridge:
-    cdef:
-        void *callback;
-        void *arguments;
-        void *response;
+cdef struct bridge_t:
+    PyObject *callback;
+    PyObject *arguments;
+    PyObject *key_arguments;
+    PyObject *response;
 
 cdef class Coroutine:
     cdef:
         coro_t *coroutine;
-        Switcher switcher;
-        Bridge bridge;
+        coro_switcher_t *switcher;
+        bridge_t *bridge;
 
-    cpdef void coro_reset(self, Bridge bridge)
-    cpdef void coro_update(self, Switcher new_switcher)
-    cpdef int coro_resume(self)
-    cpdef int coro_resume_value(self, int value)
-    cpdef int coro_yield(self, int value)
-    cpdef int coro_size(self)
-    cpdef object response(self)
+    cdef void coro_reset(self, object callback, object args, object kwargs)
+    cdef void coro_update(self, coro_switcher_t *switcher)
+    cdef int coro_resume(self)
+    cdef int coro_resume_value(self, int value)
+    cdef int coro_yield(self, int value)
+    cdef int coro_size(self)
+    cdef object response(self)
