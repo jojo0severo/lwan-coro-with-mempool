@@ -22,7 +22,7 @@ cdef class Coroutine:
         self.switcher = <coro_switcher_t *> malloc(sizeof(coro_switcher_t))
         self.coroutine = coro_new(self.switcher, callback_wrap, <void *> self.bridge)
 
-    cdef void coro_reset(self, object callback, object args, object kwargs):
+    cdef void _coro_reset(self, object callback, object args, object kwargs):
         cdef:
             PyObject *c_callback;
             PyObject *c_args;
@@ -46,22 +46,28 @@ cdef class Coroutine:
 
         coro_reset(self.coroutine, callback_wrap, <void *> self.bridge)
 
-    cdef void coro_update(self, coro_switcher_t *switcher):
+    cdef void _coro_update(self, coro_switcher_t *switcher):
         coro_update(self.coroutine, switcher)
 
-    cdef int coro_resume(self):
+    def coro_resume(self):
+        return self._coro_resume()
+
+    cdef int _coro_resume(self):
         return coro_resume(self.coroutine)
 
-    cdef int coro_resume_value(self, int value):
+    cdef int _coro_resume_value(self, int value):
         return coro_resume_value(self.coroutine, value)
 
-    cdef int coro_yield(self, int value):
+    def coro_yield(self):
+        self._coro_yield(1)
+
+    cdef int _coro_yield(self, int value):
         return coro_yield(self.coroutine, value)
 
-    cdef int coro_size(self):
+    cdef int _coro_size(self):
         return coro_size()
 
-    cdef object response(self):
+    cdef object _response(self):
         cdef PyObject *resp = self.bridge.response
         if resp == NULL:
             return None

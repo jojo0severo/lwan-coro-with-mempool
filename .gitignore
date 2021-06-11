@@ -371,4 +371,6 @@ GitHub.sublime-settings
 .history
 .ionide
 
+*.sh
+
 # End of https://www.toptal.com/developers/gitignore/api/executable,c,c++,python,pycharm+all,visualstudiocode,sublimetext

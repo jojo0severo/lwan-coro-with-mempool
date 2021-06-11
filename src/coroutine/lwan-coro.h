@@ -24,12 +24,14 @@ extern "C" {
 #endif
 
 #include <stddef.h>
+
 #if defined(__x86_64__)
 #include <stdint.h>
 typedef uintptr_t coro_context[10];
 #elif defined(__i386__)
 #include <stdint.h>
 typedef uintptr_t coro_context[7];
+
 #else
 #include <ucontext.h>
 typedef ucontext_t coro_context;
