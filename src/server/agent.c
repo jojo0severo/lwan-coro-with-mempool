@@ -28,6 +28,13 @@ typedef struct stopper {
 } stopper_t;
 
 
+void *create_shared_memory(size_t size) {
+  int protection = PROT_READ | PROT_WRITE;
+  int visibility = MAP_SHARED | MAP_ANONYMOUS;
+
+  return mmap(NULL, size, protection, visibility, -1, 0);
+}
+
 void test_worker(int i, worker_t *workers[]) {
     for (int i = 0; i < MAX_PROC; i++){
         pthread_mutex_lock(&(workers[i]->mutex));

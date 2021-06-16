@@ -42,12 +42,12 @@ int main(void){
             printf("SD = %d\n", sd);
             printf("FDS.FD = %d\n\n", fds[i].fd);
 
-            if(fds[i].fd == sd && new_sd != -1){
+            if(fds[i].fd == sd){
                 do{
                     new_sd = accept(fds[i].fd, NULL, NULL);
                     if(new_sd < 0){
                         if(errno != EWOULDBLOCK){
-                            printf("accept\n");
+                            printf("Error accept\n");
                             exit(-1);
                         }
                         printf("err");
@@ -59,7 +59,6 @@ int main(void){
                     fds[nfds].fd = new_sd;
                     fds[nfds].events = POLLIN;
                     nfds++;
-                    break;
 
                 } while(new_sd != -1);
             }

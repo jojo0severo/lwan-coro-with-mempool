@@ -1,0 +1,4 @@
+- HTTP/2   (https://tools.ietf.org/rfc/rfc7540.txt)
+- HTTP/1.1 (https://tools.ietf.org/rfc/rfc2616.txt)
+- HTTP/1.0 (https://tools.ietf.org/rfc/rfc1945.txt)
+- HTTPS
