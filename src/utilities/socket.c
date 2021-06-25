@@ -82,19 +82,3 @@ int set_non_blocking(int sockfd, char **err) {
 
     return 0;
 }
-
-
-//int main(void) {
-//    char *err;
-//    int s;
-//    if((s = create_socket(8080, 20, &err)) < 0){
-//        printf("%s\n", err);
-//    }
-//
-//    int n = accept(s, NULL, NULL);
-//    char buffer[2048];
-//
-//    recv(n, buffer, sizeof(buffer), 0);
-//    printf("%s\n", buffer);
-//    close(s);
-//}

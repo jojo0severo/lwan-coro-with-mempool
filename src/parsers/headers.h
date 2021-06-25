@@ -1,9 +1,9 @@
 #ifndef PARSE_H
 #define PARSE_H
 
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct method_def {
     char *type;
